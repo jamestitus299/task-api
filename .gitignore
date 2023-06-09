@@ -2,3 +2,4 @@
 venv
 Procfile
 .txt
+__pycache__
