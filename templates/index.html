@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TaskAPI</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.7/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="flex flex-col min-h-screen bg-gray-100">
+  <nav class="bg-blue-500 p-4">
+    <h1 class="text-white text-2xl font-bold">TaskAPI</h1>
+  </nav>
+
+  <div class="flex items-center justify-center bg-gray-100 py-56">
+    <div class="w-full max-w-xl p-8 bg-white rounded shadow text-center mb-2">
+      <h1 class="text-2xl font-bold mb-6">Welcome to TaskAPI</h1>
+      <p class="text-lg mb-2">Create your Tasks easily and finish them successfully.</p>
+      <p class="text-lg mb-6">Read the documentation for details.</p>
+      <a href="#" class="text-blue-500 underline">Get Started</a>
+    </div>
+  </div>
+
+  <div class="flex-grow flex items-center justify-center py-40">
+    <div class="max-w-xl p-8 bg-white rounded shadow">
+      <h1 class="text-2xl font-bold mb-6">Create Task</h1>
+      <form action="/task/new" method="POST">
+        <label for="question">Task Title:</label><br>
+        <input type="text" id="taskTitle" name="taskTitle" class="border border-gray-300 px-3 py-2 rounded mb-4"><br>
+
+        <label for="options">Task Description:</label><br>
+        <input type="text" id="taskDescription" name="taskDescription" class="border border-gray-300 px-3 py-2 rounded mb-4"><br>
+
+        <label for="endDate">Complete Before:</label><br>
+        <input type="datetime-local" id="endDate" name="endDate" class="border border-gray-300 px-3 py-2 rounded mb-4"><br>
+
+        <input type="submit" value="Create Task" class="bg-blue-500 text-white px-4 py-2 ">
+      </form>
+    </div>
+  </div>
+  <footer class="bg-blue-500 text-white py-4 text-center">
+    <p>&copy Created by James Titus</p>
+  </footer>
+  
+</body>
+</html>
