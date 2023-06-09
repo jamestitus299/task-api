@@ -3,3 +3,4 @@ venv
 Procfile
 .txt
 __pycache__
+.gitignore
