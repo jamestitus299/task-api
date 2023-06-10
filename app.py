@@ -11,6 +11,7 @@ from models.task import Task
 
 load_dotenv()
 app = Flask(__name__)
+app.debug = True
 
 # MongoDb configuration
 mongo_client = MongoClient(os.environ.get("MONGODB_CONNECTION_URL"))
@@ -72,14 +73,16 @@ def newTask():
 @app.route("/task/all", methods=["GET"])
 def getTasks():
 
-    tasks = taskCollection.find({}, {"title":1, "description":1, "deadline":1})
+    tasks = taskCollection.find({})
     # print(tasks)
     return jsonify(
         [
             {
+                "id": str(task["_id"]),
                 "title" : task["title"],
                 "description" : task["description"],
                 "dueDate" : str(task["deadline"]),
+                "status": task["status"]
             }
             for task in tasks
         ]
