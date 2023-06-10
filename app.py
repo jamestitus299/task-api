@@ -11,7 +11,6 @@ from models.task import Task
 
 load_dotenv()
 app = Flask(__name__)
-app.debug = True
 
 # MongoDb configuration
 mongo_client = MongoClient(os.environ.get("MONGODB_CONNECTION_URL"))
@@ -26,6 +25,7 @@ def home():
 # 2. /task/new endpoint -- to create a new task
 @app.route("/task/new", methods=["POST"])
 def newTask():
+
     # JSON data
     if request.headers["Content-Type"] == "application/json":  
         data = request.get_json()
@@ -36,6 +36,7 @@ def newTask():
         title = data.get("title").strip()
         description = data.get("description").strip()
         dueDate = datetime.fromisoformat(data.get("endDate"))
+
     # Form data    
     elif (
         request.headers["Content-Type"] == "application/x-www-form-urlencoded"
@@ -49,15 +50,21 @@ def newTask():
             or description == ""
             or dueDate == ""
         ):
-            abort(400, "Invalid request body. Missing Data.")
+            abort(400, "Invalid request body. Missing necessary Data.")
 
         dueDate = datetime.fromisoformat(dueDate)
         today = datetime.now()
         if dueDate < today:
-            abort(400, "Duedate should be a date following today.")
+            abort(400, "Duedate can't be set to present time.")
+
     # invalid data
     else:
         abort(400, "Unsupported Data or empty body")
+
+    # if similar task already exists
+    taskPresent = taskCollection.find_one({"title" : title})
+    if taskPresent:
+        abort(400, "Similar Task already exists")
 
     # Store the task in the MongoDb database
     taskData = Task(title, description, dueDate)
@@ -67,23 +74,36 @@ def newTask():
     return jsonify({"id": taskId}), 201
 
 
-# 3. /task/all -- retrieve all tasks
-@app.route("/task/all", methods=["GET"])
+# 3. /task/list -- retrieve all tasks
+@app.route("/task/list", methods=["GET"])
 def getTasks():
 
     tasks = taskCollection.find({})
     # print(tasks)
+
+    completedTasks = []
+    incompleteTasks = []
+
+    for task in tasks:
+        task = {
+            "id": str(task["_id"]),
+            "title" : task["title"],
+            "description" : task["description"],
+            "dueDate" : str(task["deadline"]),
+            "status": task["status"]
+        }
+        
+        if task["status"]:
+            completedTasks.append(task)
+        else:
+            incompleteTasks.append(task)       
+
+
     return jsonify(
-        [
-            {
-                "id": str(task["_id"]),
-                "title" : task["title"],
-                "description" : task["description"],
-                "dueDate" : str(task["deadline"]),
-                "status": task["status"]
-            }
-            for task in tasks
-        ]
+        {
+            "completedTasks": completedTasks,
+            "incompleteTasks": incompleteTasks
+        }
     )
 
 # 4. /task/<id>/value -- retrieve a task by its id
@@ -118,13 +138,14 @@ def deleteTask(id):
             abort(404, "No task found")
 
         return jsonify(
-                {
-                    "id": id,
-                    "message": "Task deleted."
-                }
+            {
+                "id": id,
+                "message": "Task deleted."
+            }
         )
     except InvalidId:
         abort(400, "Invalid TaskId")
+
 
 # 6. /task/<id>/update -- update a task status
 @app.route("/task/<string:id>/update", methods=["GET", "POST"])
@@ -138,16 +159,13 @@ def updateTask(id):
             abort(404, "No task found")
 
         return jsonify(
-                {
-                    "id": id,
-                    "message": "Task status updated."
-                }
+            {
+                "id": id,
+                "message": "Task status updated."
+            }
         )
     except InvalidId:
         abort(400, "Invalid TaskId")
-
-
-
 
 
 if __name__ == "__main__":
