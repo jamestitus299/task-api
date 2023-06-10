@@ -86,7 +86,7 @@ def getTasks():
         ]
     )
 
-# 3. /task/<id>/value -- retrieve a task by its id
+# 4. /task/<id>/value -- retrieve a task by its id
 @app.route("/task/<string:id>/value", methods=["GET", "POST"])
 def getTask(id):
     try:
@@ -108,10 +108,43 @@ def getTask(id):
         abort(400, "Invalid TaskId")
 
 
+# 5. /task/<id>/delete -- delete a task by its id
+@app.route("/task/<string:id>/delete", methods=["GET", "POST"])
+def deleteTask(id):
+    try:
+        task = taskCollection.delete_one({"_id": ObjectId(id)})
 
+        if not task:
+            abort(404, "No task found")
 
+        return jsonify(
+                {
+                    "id": id,
+                    "message": "Task deleted."
+                }
+        )
+    except InvalidId:
+        abort(400, "Invalid TaskId")
 
+# 6. /task/<id>/update -- update a task status
+@app.route("/task/<string:id>/update", methods=["GET", "POST"])
+def updateTask(id):
+    try:
+        prevTask = taskCollection.find_one({"_id": ObjectId(id)})
+        prevTaskStatus = prevTask["status"]
+        task = taskCollection.update_one({"_id": ObjectId(id)}, {"$set": {"status": not prevTaskStatus}})
 
+        if not task:
+            abort(404, "No task found")
+
+        return jsonify(
+                {
+                    "id": id,
+                    "message": "Task status updated."
+                }
+        )
+    except InvalidId:
+        abort(400, "Invalid TaskId")
 
 
 
