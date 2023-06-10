@@ -33,15 +33,15 @@ def newTask():
         if data is None:
             abort(400, "Invalid request body. JSON data expected.")
 
-        title = data.get("title")
-        description = data.get("description")
+        title = data.get("title").strip()
+        description = data.get("description").strip()
         dueDate = datetime.fromisoformat(data.get("endDate"))
     # Form data    
     elif (
         request.headers["Content-Type"] == "application/x-www-form-urlencoded"
     ):  
-        title = request.form.get("taskTitle")
-        description = request.form.get("taskDescription")
+        title = request.form.get("taskTitle").strip()
+        description = request.form.get("taskDescription").strip()
         dueDate= request.form.get("endDate")
 
         if (
@@ -58,8 +58,6 @@ def newTask():
     # invalid data
     else:
         abort(400, "Unsupported Data or empty body")
-
-    
 
     # Store the task in the MongoDb database
     taskData = Task(title, description, dueDate)
@@ -88,6 +86,26 @@ def getTasks():
         ]
     )
 
+
+@app.route("/task/<string:id>/value", methods=["GET", "POST"])
+def getTask(id):
+    try:
+        task = taskCollection.find_one({"_id": ObjectId(id)})
+
+        if not task:
+            abort(404, "No task found")
+
+        return jsonify(
+                {
+                    "id": str(task["_id"]),
+                    "title" : task["title"],
+                    "description" : task["description"],
+                    "dueDate" : str(task["deadline"]),
+                    "status": task["status"]
+                }
+        )
+    except InvalidId:
+        abort(400, "Invalid TaskId")
 
 
 
