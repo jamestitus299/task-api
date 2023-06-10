@@ -86,7 +86,7 @@ def getTasks():
         ]
     )
 
-
+# 3. /task/<id>/value -- retrieve a task by its id
 @app.route("/task/<string:id>/value", methods=["GET", "POST"])
 def getTask(id):
     try:
@@ -117,5 +117,6 @@ def getTask(id):
 
 
 
-
+if __name__ == "__main__":
+    app.run()
 
