@@ -11,6 +11,7 @@ from models.task import Task
 
 load_dotenv()
 app = Flask(__name__)
+app.debug = True
 
 # MongoDb configuration
 mongo_client = MongoClient(os.environ.get("MONGODB_CONNECTION_URL"))
@@ -32,15 +33,15 @@ def newTask():
         if data is None:
             abort(400, "Invalid request body. JSON data expected.")
 
-        title = data.get("title")
-        description = data.get("description")
+        title = data.get("title").strip()
+        description = data.get("description").strip()
         dueDate = datetime.fromisoformat(data.get("endDate"))
     # Form data    
     elif (
         request.headers["Content-Type"] == "application/x-www-form-urlencoded"
     ):  
-        title = request.form.get("taskTitle")
-        description = request.form.get("taskDescription")
+        title = request.form.get("taskTitle").strip()
+        description = request.form.get("taskDescription").strip()
         dueDate= request.form.get("endDate")
 
         if (
@@ -58,8 +59,6 @@ def newTask():
     else:
         abort(400, "Unsupported Data or empty body")
 
-    
-
     # Store the task in the MongoDb database
     taskData = Task(title, description, dueDate)
     task = taskCollection.insert_one(taskData.__dict__)
@@ -72,29 +71,85 @@ def newTask():
 @app.route("/task/all", methods=["GET"])
 def getTasks():
 
-    tasks = taskCollection.find({}, {"title":1, "description":1, "deadline":1})
+    tasks = taskCollection.find({})
     # print(tasks)
     return jsonify(
         [
             {
+                "id": str(task["_id"]),
                 "title" : task["title"],
                 "description" : task["description"],
                 "dueDate" : str(task["deadline"]),
+                "status": task["status"]
             }
             for task in tasks
         ]
     )
 
+# 4. /task/<id>/value -- retrieve a task by its id
+@app.route("/task/<string:id>/value", methods=["GET", "POST"])
+def getTask(id):
+    try:
+        task = taskCollection.find_one({"_id": ObjectId(id)})
+
+        if not task:
+            abort(404, "No task found")
+
+        return jsonify(
+                {
+                    "id": str(task["_id"]),
+                    "title" : task["title"],
+                    "description" : task["description"],
+                    "dueDate" : str(task["deadline"]),
+                    "status": task["status"]
+                }
+        )
+    except InvalidId:
+        abort(400, "Invalid TaskId")
+
+
+# 5. /task/<id>/delete -- delete a task by its id
+@app.route("/task/<string:id>/delete", methods=["GET", "POST"])
+def deleteTask(id):
+    try:
+        task = taskCollection.delete_one({"_id": ObjectId(id)})
+
+        if not task:
+            abort(404, "No task found")
+
+        return jsonify(
+                {
+                    "id": id,
+                    "message": "Task deleted."
+                }
+        )
+    except InvalidId:
+        abort(400, "Invalid TaskId")
+
+# 6. /task/<id>/update -- update a task status
+@app.route("/task/<string:id>/update", methods=["GET", "POST"])
+def updateTask(id):
+    try:
+        prevTask = taskCollection.find_one({"_id": ObjectId(id)})
+        prevTaskStatus = prevTask["status"]
+        task = taskCollection.update_one({"_id": ObjectId(id)}, {"$set": {"status": not prevTaskStatus}})
+
+        if not task:
+            abort(404, "No task found")
+
+        return jsonify(
+                {
+                    "id": id,
+                    "message": "Task status updated."
+                }
+        )
+    except InvalidId:
+        abort(400, "Invalid TaskId")
 
 
 
 
 
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    app.run()
 
