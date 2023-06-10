@@ -11,7 +11,6 @@ from models.task import Task
 
 load_dotenv()
 app = Flask(__name__)
-app.debug = True
 
 # MongoDb configuration
 mongo_client = MongoClient(os.environ.get("MONGODB_CONNECTION_URL"))
@@ -59,6 +58,11 @@ def newTask():
     else:
         abort(400, "Unsupported Data or empty body")
 
+    # if similar task already exists
+    taskPresent = taskCollection.find_one({"title" : title})
+    if taskPresent:
+        abort(400, "Similar Task already exists")
+
     # Store the task in the MongoDb database
     taskData = Task(title, description, dueDate)
     task = taskCollection.insert_one(taskData.__dict__)
@@ -67,23 +71,36 @@ def newTask():
     return jsonify({"id": taskId}), 201
 
 
-# 3. /task/all -- retrieve all tasks
-@app.route("/task/all", methods=["GET"])
+# 3. /task/list -- retrieve all tasks
+@app.route("/task/list", methods=["GET"])
 def getTasks():
 
     tasks = taskCollection.find({})
     # print(tasks)
+
+    completedTasks = []
+    incompleteTasks = []
+
+    for task in tasks:
+        task = {
+            "id": str(task["_id"]),
+            "title" : task["title"],
+            "description" : task["description"],
+            "dueDate" : str(task["deadline"]),
+            "status": task["status"]
+        }
+        
+        if task["status"]:
+            completedTasks.append(task)
+        else:
+            incompleteTasks.append(task)       
+
+
     return jsonify(
-        [
-            {
-                "id": str(task["_id"]),
-                "title" : task["title"],
-                "description" : task["description"],
-                "dueDate" : str(task["deadline"]),
-                "status": task["status"]
-            }
-            for task in tasks
-        ]
+        {
+            "completedTasks": completedTasks,
+            "incompleteTasks": incompleteTasks
+        }
     )
 
 # 4. /task/<id>/value -- retrieve a task by its id
@@ -145,9 +162,6 @@ def updateTask(id):
         )
     except InvalidId:
         abort(400, "Invalid TaskId")
-
-
-
 
 
 if __name__ == "__main__":
