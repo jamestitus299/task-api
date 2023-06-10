@@ -25,6 +25,7 @@ def home():
 # 2. /task/new endpoint -- to create a new task
 @app.route("/task/new", methods=["POST"])
 def newTask():
+
     # JSON data
     if request.headers["Content-Type"] == "application/json":  
         data = request.get_json()
@@ -35,6 +36,7 @@ def newTask():
         title = data.get("title").strip()
         description = data.get("description").strip()
         dueDate = datetime.fromisoformat(data.get("endDate"))
+
     # Form data    
     elif (
         request.headers["Content-Type"] == "application/x-www-form-urlencoded"
@@ -48,12 +50,13 @@ def newTask():
             or description == ""
             or dueDate == ""
         ):
-            abort(400, "Invalid request body. Missing Data.")
+            abort(400, "Invalid request body. Missing necessary Data.")
 
         dueDate = datetime.fromisoformat(dueDate)
         today = datetime.now()
         if dueDate < today:
-            abort(400, "Duedate should be a date following today.")
+            abort(400, "Duedate can't be set to present time.")
+
     # invalid data
     else:
         abort(400, "Unsupported Data or empty body")
@@ -135,13 +138,14 @@ def deleteTask(id):
             abort(404, "No task found")
 
         return jsonify(
-                {
-                    "id": id,
-                    "message": "Task deleted."
-                }
+            {
+                "id": id,
+                "message": "Task deleted."
+            }
         )
     except InvalidId:
         abort(400, "Invalid TaskId")
+
 
 # 6. /task/<id>/update -- update a task status
 @app.route("/task/<string:id>/update", methods=["GET", "POST"])
@@ -155,10 +159,10 @@ def updateTask(id):
             abort(404, "No task found")
 
         return jsonify(
-                {
-                    "id": id,
-                    "message": "Task status updated."
-                }
+            {
+                "id": id,
+                "message": "Task status updated."
+            }
         )
     except InvalidId:
         abort(400, "Invalid TaskId")
